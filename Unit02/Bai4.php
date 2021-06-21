@@ -4,7 +4,7 @@ $n = 0;
 if (isset ( $_POST ['n'] )) {
     $n = $_POST ['n'];
 }
-function totalDigitsOfNumber($n) {
+function Sum($n) {
     $total = 0;
     do {
         $total = $total + ($n % DEC_10);
@@ -29,7 +29,7 @@ function totalDigitsOfNumber($n) {
 <br>
 <?php
 if (filter_var ( $n, FILTER_VALIDATE_INT )) {
-    echo ("Tổng của các chữ số của $n là: " . totalDigitsOfNumber ( $n ));
+    echo ("Tổng của các chữ số của $n là: " . Sum( $n ));
 } else {
     echo ("Giá trị input không hợp lệ!");
 }
