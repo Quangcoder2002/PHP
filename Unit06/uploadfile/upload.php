@@ -1,96 +1,56 @@
 <?php
-  if ($_SERVER['REQUEST_METHOD'] !== 'POST')
-  {
+session_start();
+function uploadFile($input_name, $target_dir, $allow_types, $max_size, $override){
+    $upload_status = true;
+    $target_file = $target_dir."/".basename($_FILES[$input_name]["name"]);
+    $errors = array();
 
-      echo "Phải Post dữ liệu<br>";
-      die;
-  }
-
-
-  if (!isset($_FILES["fileupload"]))
-  {
-      echo "Dữ liệu không đúng cấu trúc<br>";
-      die;
-  }
-
-
-  if ($_FILES["fileupload"]['error'] != 0)
-  {
-    echo "Dữ liệu upload bị lỗi<br>";
-    die;
-  }
-
-
-  $target_dir    = "file/";
-
-  $target_file   =  $target_dir . basename($_FILES["fileupload"]["name"]);
-
-  $allowUpload   = true;
-
-
-  $imageFileType = pathinfo($target_file,PATHINFO_EXTENSION);
-
-
-  $maxfilesize   = 800000;
-
-
-  $allowtypes    = array('jpg', 'png', 'jpeg', 'gif');
-
-
-  if(isset($_POST["submit"])) {
-
-      $check = getimagesize($_FILES["fileupload"]["tmp_name"]);
-      if($check !== false)
-      {
-          echo "Đây là file ảnh - " . $check["mime"] . ".<br>";
-          $allowUpload = true;
+    $types = "";
+    if(is_array($allow_types)){
+      foreach ($allow_types as $key => $type) {
+        $types .= $type.",";
       }
-      else
-      {
-          echo "Không phải file ảnh.";
-          $allowUpload = false;
-      }
-  }
+    }
+    $types = trim($types,',');
 
+    if(!isset($_FILES[$input_name])){
+      $errors[] = "Không có dữ liệu.";
+      $upload_status = false;
+    }
 
-  if (file_exists($target_file))
-  {
-      echo "Tên file đã tồn tại trên server, không được ghi đè<br>";
-      $allowUpload = false;
-  }
+    if ($_FILES[$input_name]['error'] != 0) {
+      $errors[] ="Dữ liệu upload bi lỗi.";
+      $upload_status = false;
+    }
 
-  if ($_FILES["fileupload"]["size"] > $maxfilesize)
-  {
-      echo "Không được upload ảnh lớn hơn $maxfilesize (bytes).";
-      $allowUpload = false;
-  }
+    $imageFileType = strtolower(pathinfo($target_file,PATHINFO_EXTENSION));
+    if (!in_array($imageFileType,$allow_types)) {
+      $errors[] = "Chỉ được upload các định dạng ".$types;
+      $upload_status = false;
+    }
 
+    if($_FILES[$input_name]["size"] > $max_size*1024*1024){
+      $errors[] = "Không được upload ảnh lớn hơn $max_size (MB)";
+      $upload_status = false;
+    }
 
+    if (file_exists($target_file) && $override == false) {
+      $errors[] = "Tên file đã tồn tại trên server, không được ghi đè";
+      $upload_status = false;
+    }
 
-  if (!in_array($imageFileType,$allowtypes ))
-  {
-      echo "Chỉ được upload các định dạng JPG, PNG, JPEG, GIF";
-      $allowUpload = false;
-  }
-
-
-  if ($allowUpload)
-  {
-      if (move_uploaded_file($_FILES["fileupload"]["tmp_name"], $target_file))
-      {
-          echo "File ". basename( $_FILES["fileupload"]["name"]).
-          " Đã upload thành công.";
-
-          echo "File lưu tại " . $target_file;
-
-      }
-      else
-      {
-          echo "Có lỗi xảy ra khi upload file.";
-      }
-  }
-  else
-  {
-      echo "Không upload được file, có thể do file lớn, kiểu file không đúng ...";
-  }
+    if ($upload_status){
+       if (move_uploaded_file($_FILES[$input_name]["tmp_name"], $target_file)) {
+          return array(true,$target_file);
+       }else {
+         $errors = "Có lỗi xảy ra khi upload file. Vui lòng kiểm tra lại.";
+         return array(false,$target_file);
+       }
+    }else {
+      return array(false,$errors);
+    }
+}
+$upload = uploadFile('fileupload', 'file',array('jpg','jpeg','png','gif'), 1, true);
+$_SESSION['upload_status'] = $upload;
+header('Location: index.php');
 ?>
